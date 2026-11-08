@@ -1,0 +1,44 @@
+// Thin typed client. The token lives in memory (and sessionStorage so a refresh keeps you signed in for the tab only).
+const BASE = "/api";
+let token: string | null = sessionStorage.getItem("token");
+
+export const auth = {
+  get token() { return token; },
+  set(t: string | null) { token = t; t ? sessionStorage.setItem("token", t) : sessionStorage.removeItem("token"); },
+};
+
+export class ApiError extends Error {
+  constructor(public status: number, message: string) { super(message); }
+}
+
+async function parse(res: Response) {
+  const text = await res.text();
+  const body = text ? JSON.parse(text) : null;
+  if (!res.ok) {
+    if (res.status === 401 && token) { auth.set(null); window.location.assign("/login"); }
+    throw new ApiError(res.status, body?.error ?? body?.title ?? `Request failed (${res.status})`);
+  }
+  return body;
+}
+
+export async function api<T = any>(method: string, path: string, body?: unknown): Promise<T> {
+  const res = await fetch(BASE + path, {
+    method,
+    headers: { ...(body !== undefined ? { "Content-Type": "application/json" } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  return parse(res);
+}
+export const get = <T = any>(p: string) => api<T>("GET", p);
+export const post = <T = any>(p: string, b?: unknown) => api<T>("POST", p, b ?? {});
+export const put = <T = any>(p: string, b?: unknown) => api<T>("PUT", p, b ?? {});
+
+// Documents are only readable with the bearer token, so fetch the bytes and open them as a blob.
+export async function openFile(url: string) {
+  const res = await fetch(BASE + url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new ApiError(res.status, "Could not open the file.");
+  const blob = await res.blob();
+  window.open(URL.createObjectURL(blob), "_blank", "noopener");
+}
+
+export type Login = { token?: string; mfaRequired?: boolean; mfaToken?: string };

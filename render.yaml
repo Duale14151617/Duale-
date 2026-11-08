@@ -1,0 +1,56 @@
+# Render Blueprint: one web service (dashboard + API + worker) and one private PostgreSQL database.
+# STAGING / PILOT SHAPE ONLY. See docs/ops/render.md for what must be decided and done before real users and real documents.
+databases:
+  - name: duale-db
+    plan: basic-256mb
+    postgresMajorVersion: "16"
+    ipAllowList: []            # private network only; nothing on the internet can connect
+
+services:
+  - type: web
+    name: duale-buildlink
+    runtime: docker
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    plan: starter              # persistent disks need a paid instance
+    healthCheckPath: /health/ready
+    autoDeploy: false
+    disk:
+      name: duale-files
+      mountPath: /data/files   # uploaded documents and job evidence (single instance only: a disk cannot be shared)
+      sizeGB: 5
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: ConnectionStrings__Default
+        fromDatabase: { name: duale-db, property: connectionString }
+      - key: Jwt__Key
+        generateValue: true
+      - key: Mfa__Key            # Render generates base64 of 256 random bits, which is what Mfa__Key requires
+        generateValue: true
+      - key: Finance__CallbackSecret
+        generateValue: true
+      - key: Metrics__Token
+        generateValue: true
+      - key: Bootstrap__AdminEmail
+        sync: false              # asked for on first deploy
+      - key: Bootstrap__AdminPassword
+        sync: false
+      - key: Database__AutoMigrate
+        value: "true"
+      - key: Files__Root
+        value: /data/files
+      - key: Web__ServeSpa
+        value: "true"
+      - key: Security__TrustProxy
+        value: "true"            # Render terminates TLS and forwards X-Forwarded-*
+      - key: Scanner__AllowNoop
+        value: "true"            # STAGING ONLY: no virus scanner. Do not accept real identity documents like this.
+      - key: Worker__Enabled
+        value: "true"
+      - key: Finance__AllowedCurrencies
+        value: USD
+      - key: Finance__Methods
+        value: cash,bank,mobile_money,other
+      - key: Finance__SelfApprovalLimit
+        value: "0"

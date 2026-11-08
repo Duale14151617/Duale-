@@ -1,0 +1,45 @@
+name: Unzip project
+
+# 1. Upload duale-buildlink-render.zip to the repo root (Add file -> Upload files).
+# 2. Actions -> Unzip project -> Run workflow.
+# The zip is extracted into the repo root, the zip is deleted, and the result is committed.
+on:
+  workflow_dispatch:
+    inputs:
+      zip:
+        description: "Zip file name in the repo root"
+        required: true
+        default: "duale-buildlink-render.zip"
+
+permissions:
+  contents: write
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract
+        run: |
+          set -e
+          test -f "${{ inputs.zip }}" || { echo "Zip not found in repo root: ${{ inputs.zip }}"; exit 1; }
+          rm -rf /tmp/x && mkdir /tmp/x
+          unzip -q "${{ inputs.zip }}" -d /tmp/x
+          # If the zip holds a single top-level folder, use its contents.
+          src=/tmp/x
+          if [ "$(ls -A /tmp/x | wc -l)" = "1" ] && [ -d "/tmp/x/$(ls -A /tmp/x)" ]; then
+            src="/tmp/x/$(ls -A /tmp/x)"
+          fi
+          # .github is skipped: the default token cannot push workflow files.
+          rsync -a --exclude '.github' "$src"/ ./
+          rm -f "${{ inputs.zip }}"
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && { echo "Nothing to commit."; exit 0; }
+          git commit -m "Unzip project"
+          git push

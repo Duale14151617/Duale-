@@ -10,9 +10,23 @@ import Admin from "./pages/Admin";
 import Notifications from "./pages/Notifications";
 import { Icon } from "./icons";
 
+function useTheme() {
+  const [dark, setDark] = useState(() => {
+    const t = document.documentElement.dataset.theme;
+    return t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+  const toggle = () => {
+    const next = dark ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("theme", next); } catch { /* private mode */ }
+    setDark(!dark);
+  };
+  return { dark, toggle };
+}
 const initials = (s: string) => s.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
 
 function Shell({ me, reload }: { me: Me; reload: () => void }) {
+  const { dark, toggle } = useTheme();
   const [phase, setPhase] = useState<"idle" | "ask" | "working">("idle");
   const signOut = () => {
     setPhase("working");
@@ -34,6 +48,7 @@ function Shell({ me, reload }: { me: Me; reload: () => void }) {
           <nav>
             {links.map((l) => <NavLink key={l.to} to={l.to}><Icon name={l.icon} /><span>{l.label}</span></NavLink>)}
           </nav>
+          <button className="theme-row" onClick={toggle}><Icon name={dark ? "sun" : "moon"} /><span>{dark ? "Light mode" : "Dark mode"}</span></button>
           <div className="who">
             <span className="avatar">{initials(me.displayName)}</span>
             <span className="meta"><b>{me.displayName}</b><span>{me.email}</span></span>
@@ -43,7 +58,7 @@ function Shell({ me, reload }: { me: Me; reload: () => void }) {
         <div className="body">
           <header className="mobilebar">
             <div className="brand"><span className="logo">D</span><span>Duale <b>BuildLink</b></span></div>
-            <button className="signout" onClick={() => setPhase("ask")} title="Signs out on every device">Sign out</button>
+            <span className="mobile-actions"><button className="theme-btn" onClick={toggle} aria-label="Toggle dark mode"><Icon name={dark ? "sun" : "moon"} size={18} /></button><button className="signout" onClick={() => setPhase("ask")} title="Signs out on every device">Sign out</button></span>
           </header>
           <main>
             <Routes>
@@ -94,7 +109,7 @@ export default function App() {
   const load = () => get<Me>("/me").then((m) => { setMe(m); setState("ready"); }).catch(() => { auth.set(null); setState("anon"); });
   useEffect(() => { if (auth.token) load(); }, []);
 
-  if (state === "loading") return <main><p>Loading…</p></main>;
+  if (state === "loading") return <div className="splash"><span className="logo">D</span><div className="bar"><span /></div></div>;
   if (state === "anon" || !me) {
     return (
       <Routes>

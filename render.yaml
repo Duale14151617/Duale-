@@ -2,7 +2,7 @@
 # STAGING / PILOT SHAPE ONLY. See docs/ops/render.md for what must be decided and done before real users and real documents.
 databases:
   - name: duale-db
-    plan: basic-256mb
+    plan: free
     postgresMajorVersion: "16"
     ipAllowList: []            # private network only; nothing on the internet can connect
 
@@ -12,13 +12,9 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile.render
     dockerContext: .
-    plan: starter              # persistent disks need a paid instance
+    plan: free                 # FREE: sleeps after ~15 min idle; files are lost on restart; free database expires after 30 days
     healthCheckPath: /health/ready
     autoDeploy: false
-    disk:
-      name: duale-files
-      mountPath: /data/files   # uploaded documents and job evidence (single instance only: a disk cannot be shared)
-      sizeGB: 5
     envVars:
       - key: PORT
         value: "8080"

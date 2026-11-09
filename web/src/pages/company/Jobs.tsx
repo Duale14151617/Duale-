@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { post } from "../../api";
 import { Msg, Status, useAction, useLoad, when } from "../../hooks";
 
@@ -69,10 +70,12 @@ export default function Jobs({ companyId }: { companyId: string }) {
         <h2>New job</h2>
         <div className="row">
           <label>Customer<select required value={f.customerId} onChange={(e) => setF({ ...f, customerId: e.target.value, locationId: "" })}><option value="">Select…</option>{customers.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-          <label>Location<select required value={f.locationId} onChange={(e) => setF({ ...f, locationId: e.target.value })}><option value="">Select…</option>{cust.data?.locations.map((l: any) => <option key={l.id} value={l.id}>{l.label}</option>)}</select></label>
+          <label>Location<select required disabled={!f.customerId} value={f.locationId} onChange={(e) => setF({ ...f, locationId: e.target.value })}><option value="">{!f.customerId ? "Choose a customer first" : cust.data && cust.data.locations.length === 0 ? "No locations yet" : "Select…"}</option>{cust.data?.locations.map((l: any) => <option key={l.id} value={l.id}>{l.label}</option>)}</select></label>
           <label>Trade<select required value={f.tradeId} onChange={(e) => setF({ ...f, tradeId: e.target.value, skillIds: [] })}><option value="">Select…</option>{catalog.data?.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
           <label>Priority<select value={f.priority} onChange={(e) => setF({ ...f, priority: e.target.value })}>{["Low", "Normal", "High", "Urgent"].map((p) => <option key={p}>{p}</option>)}</select></label>
         </div>
+        {customers.data && customers.data.length === 0 && <p className="muted">There are no customers yet. <Link to={`/companies/${companyId}/customers`}>Add a customer</Link> first, then add a location for them.</p>}
+        {f.customerId && cust.data && cust.data.locations.length === 0 && <p className="muted">This customer has no locations yet. <Link to={`/companies/${companyId}/customers`}>Open Customers</Link>, tap Locations, and add one (choose a service area such as Garowe).</p>}
         {trade && trade.skills.length > 0 && <div><label>Required skills</label>{trade.skills.map((s: any) => (
           <label key={s.id}><input type="checkbox" checked={f.skillIds.includes(s.id)} onChange={(e) => setF({ ...f, skillIds: e.target.checked ? [...f.skillIds, s.id] : f.skillIds.filter((x) => x !== s.id) })} /> {s.name}</label>))}</div>}
         <div className="row">

@@ -7,7 +7,8 @@ import { AuthArt } from "../icons";
 export function Login({ onDone }: { onDone: () => void }) {
   const nav = useNavigate();
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [f, setF] = useState({ email: "", password: "", displayName: "", code: "" });
+  const [f, setF] = useState({ email: "", password: "", displayName: "", phone: "", code: "" });
+  const [role, setRole] = useState<"company" | "technician">("company");
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const { run, error, busy, notice } = useAction();
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
@@ -17,12 +18,18 @@ export function Login({ onDone }: { onDone: () => void }) {
     await run(async () => {
       if (mfaToken) {
         const r = await post<LoginRes>("/auth/mfa/verify", { mfaToken, code: f.code });
-        auth.set(r.token!); nav("/companies"); onDone(); return;
+        auth.set(r.token!); nav("/"); onDone(); return;
       }
       if (mode === "register") { await post("/auth/register", { email: f.email, password: f.password, displayName: f.displayName }); }
       const r = await post<LoginRes>("/auth/login", { email: f.email, password: f.password });
       if (r.mfaRequired) { setMfaToken(r.mfaToken!); return; }
-      auth.set(r.token!); nav("/companies"); onDone();
+      auth.set(r.token!);
+      if (mode === "register" && role === "technician") {
+        // The account exists now. If the profile call fails, the Technician page offers the same form again.
+        try { await post("/technicians/me", { displayName: f.displayName, phone: f.phone || undefined }); } catch { /* retried on /technician */ }
+        nav("/technician"); onDone(); return;
+      }
+      nav("/"); onDone();
     });
   };
 
@@ -38,7 +45,14 @@ export function Login({ onDone }: { onDone: () => void }) {
         </>
       ) : (
         <>
-          {mode === "register" && <label>Name<input value={f.displayName} onChange={set("displayName")} required /></label>}
+          {mode === "register" && (
+            <div className="row" role="radiogroup" aria-label="Account type">
+              <button type="button" className={role === "company" ? "primary" : "ghost"} onClick={() => setRole("company")}>I'm a company</button>
+              <button type="button" className={role === "technician" ? "primary" : "ghost"} onClick={() => setRole("technician")}>I'm a technician</button>
+            </div>
+          )}
+          {mode === "register" && <label>{role === "technician" ? "Full name" : "Name"}<input value={f.displayName} onChange={set("displayName")} required /></label>}
+          {mode === "register" && role === "technician" && <label>Phone<input type="tel" value={f.phone} onChange={set("phone")} placeholder="+252 90 000 0000" required /></label>}
           <label>Email<input type="email" value={f.email} onChange={set("email")} autoComplete="username" required /></label>
           <label>Password<input type="password" value={f.password} onChange={set("password")} minLength={mode === "register" ? 12 : undefined} autoComplete={mode === "register" ? "new-password" : "current-password"} required /></label>
           {mode === "register" && <p className="muted">At least 12 characters.</p>}

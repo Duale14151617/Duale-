@@ -16,3 +16,7 @@ offers, notifications, and for platform staff: company verification queue, techn
 short-lived signed links), catalog and service areas, MFA reset support.
 
 Not built yet: reports, finance, job execution (Phases 3-5). Not type-checked or run in the environment that produced it; run `npm run build` first.
+
+
+## Technician registration
+On the sign-up form choose **I'm a technician** (name, phone, email, password). The account is created, the technician profile is created (`POST /technicians/me`) and you land on `/technician`, where you claim skills, pick service areas, upload documents and accept company invitations. Existing users can use **Become a technician** in the menu to add a profile to their account.

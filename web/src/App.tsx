@@ -5,6 +5,7 @@ import { Me, MeContext, isPlatform } from "./hooks";
 import { Login, Recover } from "./pages/Auth";
 import Security from "./pages/Security";
 import Companies from "./pages/Companies";
+import Technician from "./pages/Technician";
 import Company from "./pages/Company";
 import Admin from "./pages/Admin";
 import Notifications from "./pages/Notifications";
@@ -36,6 +37,7 @@ function Shell({ me, reload }: { me: Me; reload: () => void }) {
   };
   const links = [
     { to: "/companies", label: "Dashboard", short: "Home", icon: "home" },
+    { to: "/technician", label: me.isTechnician ? "My technician profile" : "Become a technician", short: "Technician", icon: "wrench" },
     ...(isPlatform(me) ? [{ to: "/admin", label: "Platform admin", short: "Admin", icon: "shield" }] : []),
     { to: "/notifications", label: "Notifications", short: "Alerts", icon: "bell" },
     { to: "/security", label: "Security", short: "Security", icon: "lock" },
@@ -63,13 +65,13 @@ function Shell({ me, reload }: { me: Me; reload: () => void }) {
           <main>
             <Routes>
               <Route path="/companies" element={<Companies />} />
+              <Route path="/technician" element={<Technician />} />
               <Route path="/companies/:id/*" element={<Company />} />
               <Route path="/admin/*" element={isPlatform(me) ? <Admin /> : <Navigate to="/companies" />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/security" element={<Security />} />
-              <Route path="*" element={<Navigate to="/companies" />} />
+              <Route path="*" element={<Navigate to={me.isTechnician && me.companies.length === 0 && !isPlatform(me) ? "/technician" : "/companies"} />} />
             </Routes>
-            {me.isTechnician && <p className="muted">You also have a technician profile. Technicians use the mobile app for jobs and documents.</p>}
           </main>
         </div>
         {phase !== "idle" && (

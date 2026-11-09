@@ -37,6 +37,12 @@ export const get = <T = any>(p: string) => api<T>("GET", p);
 export const post = <T = any>(p: string, b?: unknown) => api<T>("POST", p, b ?? {});
 export const put = <T = any>(p: string, b?: unknown) => api<T>("PUT", p, b ?? {});
 
+// Multipart upload (the browser sets the boundary, so no Content-Type header here).
+export async function upload<T = any>(path: string, form: FormData): Promise<T> {
+  const res = await fetch(BASE + path, { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form });
+  return parse(res);
+}
+
 // Documents are only readable with the bearer token, so fetch the bytes and open them as a blob.
 export async function openFile(url: string) {
   const res = await fetch(BASE + url, { headers: { Authorization: `Bearer ${token}` } });

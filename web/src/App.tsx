@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { auth, get, post } from "./api";
 import { Me, MeContext, isPlatform } from "./hooks";
 import { Login, Recover } from "./pages/Auth";
@@ -21,8 +21,12 @@ const Icon = ({ name }: { name: string }) => (
 const initials = (s: string) => s.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
 
 function Shell({ me, reload }: { me: Me; reload: () => void }) {
-  const nav = useNavigate();
-  const out = async () => { try { await post("/auth/logout-all"); } catch { /* token may already be invalid */ } auth.set(null); nav("/login"); };
+  const out = async () => {
+    // Revoke sessions, but never wait more than 1.5s (the server may be waking up), then reload so no stale screen remains.
+    try { await Promise.race([post("/auth/logout-all").catch(() => {}), new Promise((r) => setTimeout(r, 1500))]); } catch { /* ignore */ }
+    auth.set(null);
+    window.location.assign("/login");
+  };
   const links = [
     { to: "/companies", label: "Dashboard", short: "Home", icon: "home" },
     ...(isPlatform(me) ? [{ to: "/admin", label: "Platform admin", short: "Admin", icon: "shield" }] : []),

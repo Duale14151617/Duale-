@@ -16,7 +16,11 @@ async function parse(res: Response) {
   const body = text ? JSON.parse(text) : null;
   if (!res.ok) {
     if (res.status === 401 && token) { auth.set(null); window.location.assign("/login"); }
-    throw new ApiError(res.status, body?.error ?? body?.title ?? `Request failed (${res.status})`);
+    const fallback = res.status === 403 ? "Not allowed (403). Your account lacks permission for this, or you belong to this company (reviewers cannot decide on their own company)."
+      : res.status === 401 ? "Session expired (401). Sign out and sign in again."
+      : res.status === 404 ? "Not found (404)."
+      : `Request failed (${res.status})`;
+    throw new ApiError(res.status, body?.error ?? body?.title ?? fallback);
   }
   return body;
 }

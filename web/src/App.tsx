@@ -9,33 +9,61 @@ import Company from "./pages/Company";
 import Admin from "./pages/Admin";
 import Notifications from "./pages/Notifications";
 
+const ICONS: Record<string, string> = {
+  home: "M3 11l9-8 9 8M5 10v10h14V10",
+  shield: "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z",
+  bell: "M6 8a6 6 0 1112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0",
+  lock: "M5 11h14v10H5zM8 11V7a4 4 0 018 0v4",
+};
+const Icon = ({ name }: { name: string }) => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICONS[name]} /></svg>
+);
+const initials = (s: string) => s.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
+
 function Shell({ me, reload }: { me: Me; reload: () => void }) {
   const nav = useNavigate();
   const out = async () => { try { await post("/auth/logout-all"); } catch { /* token may already be invalid */ } auth.set(null); nav("/login"); };
+  const links = [
+    { to: "/companies", label: "Dashboard", short: "Home", icon: "home" },
+    ...(isPlatform(me) ? [{ to: "/admin", label: "Platform admin", short: "Admin", icon: "shield" }] : []),
+    { to: "/notifications", label: "Notifications", short: "Alerts", icon: "bell" },
+    { to: "/security", label: "Security", short: "Security", icon: "lock" },
+  ];
   return (
     <MeContext.Provider value={{ me, reload }}>
-      <header className="top">
-        <span className="brand">Duale <b>BuildLink</b></span>
-        <nav>
-          <NavLink to="/companies">Companies</NavLink>
-          {isPlatform(me) && <NavLink to="/admin">Platform admin</NavLink>}
-          <NavLink to="/notifications">Notifications</NavLink>
-          <NavLink to="/security">Security</NavLink>
+      <div className="app">
+        <aside className="side">
+          <div className="brand"><span className="logo">D</span><span>Duale <b>BuildLink</b></span></div>
+          <nav>
+            {links.map((l) => <NavLink key={l.to} to={l.to}><Icon name={l.icon} /><span>{l.label}</span></NavLink>)}
+          </nav>
+          <div className="who">
+            <span className="avatar">{initials(me.displayName)}</span>
+            <span className="meta"><b>{me.displayName}</b><span>{me.email}</span></span>
+            <button className="signout" onClick={out} title="Signs out on every device">Sign out</button>
+          </div>
+        </aside>
+        <div className="body">
+          <header className="mobilebar">
+            <div className="brand"><span className="logo">D</span><span>Duale <b>BuildLink</b></span></div>
+            <button className="signout" onClick={out} title="Signs out on every device">Sign out</button>
+          </header>
+          <main>
+            <Routes>
+              <Route path="/companies" element={<Companies />} />
+              <Route path="/companies/:id/*" element={<Company />} />
+              <Route path="/admin/*" element={isPlatform(me) ? <Admin /> : <Navigate to="/companies" />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/security" element={<Security />} />
+              <Route path="*" element={<Navigate to="/companies" />} />
+            </Routes>
+            {me.isTechnician && <p className="muted">You also have a technician profile. Technicians use the mobile app for jobs and documents.</p>}
+          </main>
+        </div>
+        <nav className="tabbar">
+          {links.map((l) => <NavLink key={l.to} to={l.to}><Icon name={l.icon} /><span>{l.short}</span></NavLink>)}
         </nav>
-        <span className="muted">{me.displayName}</span>
-        <button className="ghost" onClick={out} title="Signs out on every device">Sign out</button>
-      </header>
-      <main>
-        <Routes>
-          <Route path="/companies" element={<Companies />} />
-          <Route path="/companies/:id/*" element={<Company />} />
-          <Route path="/admin/*" element={isPlatform(me) ? <Admin /> : <Navigate to="/companies" />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/security" element={<Security />} />
-          <Route path="*" element={<Navigate to="/companies" />} />
-        </Routes>
-        {me.isTechnician && <p className="muted">You also have a technician profile. Technicians use the mobile app for jobs and documents.</p>}
-      </main>
+      </div>
     </MeContext.Provider>
   );
 }
@@ -58,4 +86,3 @@ export default function App() {
   }
   return <Shell me={me} reload={load} />;
 }
-

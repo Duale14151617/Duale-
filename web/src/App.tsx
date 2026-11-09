@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
-import { auth, get, post } from "./api";
+import { auth, get, revokeSessions } from "./api";
 import { Me, MeContext, isPlatform } from "./hooks";
 import { Login, Recover } from "./pages/Auth";
 import Security from "./pages/Security";
@@ -21,11 +21,12 @@ const Icon = ({ name }: { name: string }) => (
 const initials = (s: string) => s.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
 
 function Shell({ me, reload }: { me: Me; reload: () => void }) {
-  const out = async () => {
-    // Revoke sessions, but never wait more than 1.5s (the server may be waking up), then reload so no stale screen remains.
-    try { await Promise.race([post("/auth/logout-all").catch(() => {}), new Promise((r) => setTimeout(r, 1500))]); } catch { /* ignore */ }
+  const [phase, setPhase] = useState<"idle" | "ask" | "working">("idle");
+  const signOut = () => {
+    setPhase("working");
+    revokeSessions();   // fire-and-forget: the server finishes this even after we leave the page
     auth.set(null);
-    window.location.assign("/login");
+    setTimeout(() => window.location.assign("/login"), 1100);
   };
   const links = [
     { to: "/companies", label: "Dashboard", short: "Home", icon: "home" },
@@ -44,13 +45,13 @@ function Shell({ me, reload }: { me: Me; reload: () => void }) {
           <div className="who">
             <span className="avatar">{initials(me.displayName)}</span>
             <span className="meta"><b>{me.displayName}</b><span>{me.email}</span></span>
-            <button className="signout" onClick={out} title="Signs out on every device">Sign out</button>
+            <button className="signout" onClick={() => setPhase("ask")} title="Signs out on every device">Sign out</button>
           </div>
         </aside>
         <div className="body">
           <header className="mobilebar">
             <div className="brand"><span className="logo">D</span><span>Duale <b>BuildLink</b></span></div>
-            <button className="signout" onClick={out} title="Signs out on every device">Sign out</button>
+            <button className="signout" onClick={() => setPhase("ask")} title="Signs out on every device">Sign out</button>
           </header>
           <main>
             <Routes>
@@ -64,6 +65,29 @@ function Shell({ me, reload }: { me: Me; reload: () => void }) {
             {me.isTechnician && <p className="muted">You also have a technician profile. Technicians use the mobile app for jobs and documents.</p>}
           </main>
         </div>
+        {phase !== "idle" && (
+          <div className="modal-backdrop" onClick={() => phase === "ask" && setPhase("idle")}>
+            <div className="modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+              {phase === "ask" ? (
+                <>
+                  <h2>Sign out?</h2>
+                  <p className="muted">Are you sure you want to sign out? This signs you out on every device.</p>
+                  <div className="row modal-actions">
+                    <button className="ghost" onClick={() => setPhase("idle")}>Cancel</button>
+                    <button className="danger" onClick={signOut}>Yes, sign out</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="spinner" aria-hidden="true" />
+                  <h2>Signing you out…</h2>
+                  <p className="muted">See you soon.</p>
+                  <div className="progress"><span /></div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
         <nav className="tabbar">
           {links.map((l) => <NavLink key={l.to} to={l.to}><Icon name={l.icon} /><span>{l.short}</span></NavLink>)}
         </nav>

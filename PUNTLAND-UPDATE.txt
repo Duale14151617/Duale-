@@ -1,1 +1,1 @@
-Puntland update + UI fixes
+Full app update: dashboard, fixes, Puntland data, sign-out dialog

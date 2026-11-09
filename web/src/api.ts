@@ -46,3 +46,12 @@ export async function openFile(url: string) {
 }
 
 export type Login = { token?: string; mfaRequired?: boolean; mfaToken?: string };
+
+// Sign-out helper: revokes every session in the background. keepalive lets the request finish even after the page navigates away,
+// so the person never waits for a slow or sleeping server.
+export function revokeSessions() {
+  if (!token) return;
+  try {
+    fetch(BASE + "/auth/logout-all", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: "{}" }).catch(() => {});
+  } catch { /* ignore */ }
+}

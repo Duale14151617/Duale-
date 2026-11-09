@@ -1,18 +1,25 @@
 name: Unzip project
 
-# 1. Upload duale-buildlink-render.zip to the repo root (Add file -> Upload files).
-# 2. Actions -> Unzip project -> Run workflow.
-# The zip is extracted into the repo root, the zip is deleted, and the result is committed.
+# Upload any .zip to the repo root (Add file -> Upload files). This runs by itself, extracts every zip in the
+# root over the repo (paths inside the zip are kept), deletes the zip and commits. No file name to type.
+# You can also run it by hand from the Actions tab (leave the field empty to unzip every zip in the root).
 on:
+  push:
+    branches: [ "main" ]
+    paths: [ "*.zip" ]
   workflow_dispatch:
     inputs:
       zip:
-        description: "Zip file name in the repo root"
-        required: true
-        default: "duale-buildlink-render.zip"
+        description: "Optional: one zip file name in the repo root (empty = all zips)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
+
+concurrency:
+  group: unzip-project
+  cancel-in-progress: false
 
 jobs:
   unzip:
@@ -21,19 +28,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Extract
+        env:
+          ZIP_INPUT: ${{ inputs.zip }}
         run: |
-          set -e
-          test -f "${{ inputs.zip }}" || { echo "Zip not found in repo root: ${{ inputs.zip }}"; exit 1; }
-          rm -rf /tmp/x && mkdir /tmp/x
-          unzip -q "${{ inputs.zip }}" -d /tmp/x
-          # If the zip holds a single top-level folder, use its contents.
-          src=/tmp/x
-          if [ "$(ls -A /tmp/x | wc -l)" = "1" ] && [ -d "/tmp/x/$(ls -A /tmp/x)" ]; then
-            src="/tmp/x/$(ls -A /tmp/x)"
-          fi
-          # .github is skipped: the default token cannot push workflow files.
-          rsync -a --exclude '.github' "$src"/ ./
-          rm -f "${{ inputs.zip }}"
+          if [ -n "$ZIP_INPUT" ]; then bash scripts/unzip-zips.sh "$ZIP_INPUT"; else bash scripts/unzip-zips.sh; fi
 
       - name: Commit
         run: |
@@ -42,4 +40,5 @@ jobs:
           git add -A
           git diff --cached --quiet && { echo "Nothing to commit."; exit 0; }
           git commit -m "Unzip project"
+          git pull --rebase
           git push

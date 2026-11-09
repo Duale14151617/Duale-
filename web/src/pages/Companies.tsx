@@ -48,10 +48,10 @@ export default function Companies() {
         <form className="card" onSubmit={create}>
           <h2 style={{ marginTop: 0 }}>Register a company</h2>
           <div className="row">
-            <label>Name<input value={f.displayName} onChange={set("displayName")} required /></label>
-            <label>Business category<input value={f.businessCategory} onChange={set("businessCategory")} required /></label>
+            <label>Name<input value={f.displayName} onChange={set("displayName")} placeholder="e.g. Garowe Builders Ltd" required /></label>
+            <label>Business category<input value={f.businessCategory} onChange={set("businessCategory")} placeholder="e.g. Construction and maintenance" required /></label>
             <label>Contact email<input type="email" value={f.contactEmail} onChange={set("contactEmail")} required /></label>
-            <label>Phone<input value={f.contactPhone} onChange={set("contactPhone")} /></label>
+            <label>Phone<input type="tel" value={f.contactPhone} onChange={set("contactPhone")} placeholder="+252 90 000 0000" /></label>
             <label>Registration reference<input value={f.registrationRef} onChange={set("registrationRef")} /></label>
           </div>
           <Msg error={a.error} notice={a.notice} />

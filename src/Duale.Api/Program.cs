@@ -131,6 +131,13 @@ using (var scope = app.Services.CreateScope())
         db.PlatformRoleAssignments.Add(new PlatformRoleAssignment { UserId = admin.Id, RoleCode = "platform_admin" });
         await db.SaveChangesAsync();
     }
+    // First run only: start the catalogue with Puntland service areas. Add or hide more later in Platform admin > Catalog.
+    if (cfg["Database:AutoMigrate"] == "true" && !await db.ServiceAreas.AnyAsync())
+    {
+        foreach (var name in new[] { "Garowe", "Bosaso", "Galkayo", "Qardho" })
+            db.ServiceAreas.Add(new ServiceArea { Name = name });
+        await db.SaveChangesAsync();
+    }
 }
 app.Run();
 

@@ -45,7 +45,7 @@ services:
       - key: Worker__Enabled
         value: "true"
       - key: Finance__AllowedCurrencies
-        value: USD
+        value: USD,SOS
       - key: Finance__Methods
         value: cash,bank,mobile_money,other
       - key: Finance__SelfApprovalLimit

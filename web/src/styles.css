@@ -1,18 +1,30 @@
 :root { --navy:#0b2545; --orange:#f26a1b; --bg:#f4f6fa; --line:#d9deea; --ink:#1b2430; --muted:#5b6678; --danger:#b3261e; --ok:#1b7f3b; }
 * { box-sizing: border-box; }
-body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--ink); }
-header.top { background:var(--navy); color:#fff; display:flex; align-items:center; gap:16px; padding:10px 20px; flex-wrap:wrap; }
-header.top .brand { font-weight:700; } header.top .brand b { color:var(--orange); }
+body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--ink); line-height:1.45; }
+
+/* Header */
+header.top { background:var(--navy); color:#fff; display:flex; align-items:center; gap:12px 16px; padding:10px 20px; flex-wrap:wrap; }
+header.top .brand { font-weight:700; font-size:1.1rem; } header.top .brand b { color:var(--orange); }
 header.top nav { display:flex; gap:4px; flex-wrap:wrap; flex:1; }
-header.top a { color:#cfd8ea; text-decoration:none; padding:6px 10px; border-radius:6px; }
-header.top a.active { background:rgba(255,255,255,.14); color:#fff; }
+header.top a { color:#cfd8ea; text-decoration:none; padding:8px 12px; border-radius:6px; white-space:nowrap; }
+header.top a.active { background:rgba(255,255,255,.16); color:#fff; }
+header.top .muted { color:#cfd8ea; font-size:.9rem; }
+header.top button.ghost { color:#fff; border:1px solid rgba(255,255,255,.55); background:transparent; }
+
 main { max-width:1100px; margin:0 auto; padding:20px; }
 h1 { font-size:1.4rem; margin:.2rem 0 1rem; } h2 { font-size:1.1rem; margin:1.4rem 0 .6rem; }
 .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
 table { width:100%; border-collapse:collapse; } th,td { text-align:left; padding:8px; border-bottom:1px solid var(--line); vertical-align:top; } th { color:var(--muted); font-weight:600; font-size:.85rem; }
-input,select,textarea { padding:8px 10px; border:1px solid var(--line); border-radius:6px; font:inherit; max-width:100%; }
-label { display:block; font-size:.85rem; color:var(--muted); margin:8px 0 2px; }
-button { padding:8px 14px; border:0; border-radius:6px; background:var(--navy); color:#fff; font:inherit; cursor:pointer; }
+
+/* Forms: label above a full-width field */
+input,select,textarea { padding:10px 12px; border:1px solid var(--line); border-radius:8px; font:inherit; max-width:100%; background:#fff; color:var(--ink); }
+input:focus,select:focus,textarea:focus { outline:2px solid var(--orange); outline-offset:1px; }
+label { display:block; font-size:.9rem; color:var(--muted); margin:12px 0 0; }
+label input,label select,label textarea { display:block; width:100%; margin-top:4px; }
+label input[type=checkbox],label input[type=radio] { display:inline-block; width:auto; margin:0 6px 0 0; }
+.row label { flex:1 1 180px; margin:0; }
+button { padding:10px 16px; border:0; border-radius:8px; background:var(--navy); color:#fff; font:inherit; cursor:pointer; }
+form button, .card > button { margin-top:14px; }
 button.primary { background:var(--orange); } button.ghost { background:transparent; color:var(--navy); border:1px solid var(--line); } button.danger { background:var(--danger); }
 button:disabled { opacity:.5; cursor:not-allowed; }
 .row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
@@ -21,4 +33,18 @@ button:disabled { opacity:.5; cursor:not-allowed; }
 .pill.Approved,.pill.Active,.pill.Completed { background:#dff3e6; } .pill.Rejected,.pill.Suspended,.pill.Cancelled { background:#f9dedc; } .pill.Pending,.pill.NeedsInfo,.pill.Offered { background:#fdeccc; }
 .narrow { max-width:420px; margin:8vh auto; }
 code.secret { display:block; word-break:break-all; background:#f0f2f7; padding:8px; border-radius:6px; }
-@media (max-width:640px) { main { padding:12px; } th:nth-child(n+4),td:nth-child(n+4) { display:none; } }
+
+/* Phones */
+@media (max-width:640px) {
+  main { padding:12px; }
+  header.top { padding:10px 12px; }
+  header.top .brand { order:1; flex:1; }
+  header.top .muted { order:2; max-width:40vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  header.top button.ghost { order:2; padding:8px 12px; }
+  header.top nav { order:3; flex:0 0 100%; flex-wrap:nowrap; overflow-x:auto; gap:6px; -webkit-overflow-scrolling:touch; }
+  input,select,textarea { font-size:16px; }
+  button { min-height:44px; }
+  .card { padding:14px; }
+  .narrow { margin:4vh auto; }
+  th:nth-child(n+4),td:nth-child(n+4) { display:none; }
+}

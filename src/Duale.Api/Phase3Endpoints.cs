@@ -266,7 +266,7 @@ public static class Phase3Endpoints
             if (j.Status != JobStatus.AwaitingReview) return Results.Conflict(new { error = $"A {j.Status} job is not awaiting review." });
             var a = await db.Assignments.FirstAsync(x => x.JobId == jobId && x.Status == AssignmentStatus.Accepted, ct);
             var tech = await db.Technicians.FirstAsync(t => t.Id == a.TechnicianId, ct);
-            if (tech.UserId == uid) return Forbidden();   // nobody approves their own work
+            if (tech.UserId == uid && !await access.IsSuper(uid, ct)) return Forbidden();   // nobody approves their own work (superadmin excepted)
             if (r.Decision == "approve" && await db.JobScopeChanges.AnyAsync(x => x.JobId == jobId && x.Status == ReviewStatus.Pending, ct))
                 return Results.Conflict(new { error = "Decide the pending scope change(s) before approving." });
 

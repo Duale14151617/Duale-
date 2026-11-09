@@ -1,1 +1,1 @@
-Full app update: dashboard, fixes, Puntland data, sign-out dialog
+Premium UI + superadmin + Puntland

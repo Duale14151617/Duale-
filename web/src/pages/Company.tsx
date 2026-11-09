@@ -1,5 +1,8 @@
 import { NavLink, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { Status, useLoad } from "../hooks";
+import { Icon } from "../icons";
+
+const TAB_ICONS: Record<string, string> = { jobs: "briefcase", review: "clipboard", finance: "wallet", reports: "chart", customers: "customer", technicians: "wrench", branches: "pin", staff: "badge" };
 import Branches from "./company/Branches";
 import Staff from "./company/Staff";
 import Customers from "./company/Customers";
@@ -21,7 +24,7 @@ export default function Company() {
       {!approved && <div className="card">This company is <b>{c.verification}</b>. {c.verificationNote && <>Reviewer note: {c.verificationNote}. </>}Branches, staff, technicians and jobs unlock once it is approved.</div>}
       <nav className="row" style={{ marginBottom: 12 }}>
         {["jobs", "review", "finance", "reports", "customers", "technicians", "branches", "staff"].map((t) => (
-          <NavLink key={t} to={`/companies/${id}/${t}`} className={({ isActive }) => (isActive ? "pill Active" : "pill")} style={{ padding: "6px 12px", textDecoration: "none", color: "inherit" }}>{t[0].toUpperCase() + t.slice(1)}</NavLink>
+          <NavLink key={t} to={`/companies/${id}/${t}`} className={({ isActive }) => (isActive ? "pill Active" : "pill")} style={{ padding: "6px 12px", textDecoration: "none", color: "inherit" }}><Icon name={TAB_ICONS[t]} size={16} />{t[0].toUpperCase() + t.slice(1)}</NavLink>
         ))}
       </nav>
       <Routes>

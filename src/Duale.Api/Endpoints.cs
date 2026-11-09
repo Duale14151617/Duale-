@@ -29,7 +29,7 @@ public static class Endpoints
         var api = app.MapGroup("").RequireAuthorization();
 
         // ---------- Auth ----------
-        anon.MapPost("/register", async Task<IResult> (RegisterReq r, AppDbContext db, IPasswordHasher<User> hasher, HttpContext http, CancellationToken ct) =>
+        anon.MapPost("/register", async Task<IResult> (RegisterReq r, AppDbContext db, IPasswordHasher<User> hasher, IConfiguration cfg, HttpContext http, CancellationToken ct) =>
         {
             var email = (r.Email ?? "").Trim().ToLowerInvariant();
             if (!Valid.Email(email) || (r.Password?.Length ?? 0) < 12 || string.IsNullOrWhiteSpace(r.DisplayName))
@@ -38,6 +38,11 @@ public static class Endpoints
             var u = new User { Email = email, DisplayName = r.DisplayName.Trim() };
             u.PasswordHash = hasher.HashPassword(u, r.Password!);
             db.Users.Add(u);
+            if (email == cfg["Bootstrap:SuperAdminEmail"]?.Trim().ToLowerInvariant())
+            {
+                db.PlatformRoleAssignments.Add(new PlatformRoleAssignment { UserId = u.Id, RoleCode = "platform_admin" });
+                db.PlatformRoleAssignments.Add(new PlatformRoleAssignment { UserId = u.Id, RoleCode = "platform_finance" });
+            }
             db.Audit(http, u.Id, "user.registered", "user", u.Id.ToString());
             try { await db.SaveChangesAsync(ct); }
             catch (DbUpdateException) { return Results.Conflict(new { error = "Email already registered." }); }
@@ -185,7 +190,7 @@ public static class Endpoints
             var c = await db.Companies.FirstOrDefaultAsync(x => x.Id == id, ct);
             if (c is null) return Results.NotFound();
             // Separation of duties: reviewers cannot decide on a company they belong to.
-            if (await db.Memberships.AnyAsync(m => m.CompanyId == id && m.UserId == uid && m.Status == MembershipStatus.Active, ct)) return Forbidden();
+            if (await db.Memberships.AnyAsync(m => m.CompanyId == id && m.UserId == uid && m.Status == MembershipStatus.Active, ct) && !await access.IsSuper(uid, ct)) return Forbidden();
             if (!c.TryDecide(r.Decision!, r.Note, out var err)) return Results.Conflict(new { error = err });
             db.Audit(http, uid, "company.verification_decided", "company", id.ToString(), id, new { decision = r.Decision });
             await db.SaveChangesAsync(ct);

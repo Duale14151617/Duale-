@@ -285,7 +285,7 @@ public static class Foundation2Endpoints
             var doc = await db.TechnicianDocuments.FirstOrDefaultAsync(d => d.Id == docId, ct);
             if (doc is null) return Results.NotFound();
             // Separation of duties: nobody reviews their own documents.
-            if (await db.Technicians.AnyAsync(t => t.Id == doc.TechnicianId && t.UserId == uid, ct)) return Forbidden();
+            if (await db.Technicians.AnyAsync(t => t.Id == doc.TechnicianId && t.UserId == uid, ct) && !await access.IsSuper(uid, ct)) return Forbidden();
             if (doc.Status != VerificationStatus.Pending) return Results.Conflict(new { error = $"Document is {doc.Status}; only Pending documents can be decided." });
             doc.Status = status.Value; doc.ReviewNote = r.Note?.Trim(); doc.ReviewedBy = uid; doc.ReviewedAt = DateTime.UtcNow;
             if (status == VerificationStatus.Approved && r.ExpiresOn is { } ex) doc.ExpiresOn = ex;

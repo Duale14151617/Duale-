@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Login as LoginRes, auth, post } from "../api";
 import { Msg, useAction } from "../hooks";
+import { AuthArt } from "../icons";
 
 export function Login({ onDone }: { onDone: () => void }) {
   const nav = useNavigate();
@@ -26,8 +27,10 @@ export function Login({ onDone }: { onDone: () => void }) {
   };
 
   return (
+    <div className="auth">
+    <AuthArt />
     <form className="card narrow" onSubmit={submit}>
-      <h1>Duale <span style={{ color: "var(--orange)" }}>BuildLink</span></h1>
+      <h1>{mfaToken ? "Two-step check" : mode === "login" ? "Welcome back" : "Create your account"}</h1>
       {mfaToken ? (
         <>
           <p>Enter the 6-digit code from your authenticator app, or a recovery code.</p>
@@ -48,6 +51,7 @@ export function Login({ onDone }: { onDone: () => void }) {
       </div>
       {!mfaToken && <p><Link to="/recover">Forgot your password?</Link></p>}
     </form>
+    </div>
   );
 }
 

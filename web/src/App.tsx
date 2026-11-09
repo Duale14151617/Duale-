@@ -8,16 +8,8 @@ import Companies from "./pages/Companies";
 import Company from "./pages/Company";
 import Admin from "./pages/Admin";
 import Notifications from "./pages/Notifications";
+import { Icon } from "./icons";
 
-const ICONS: Record<string, string> = {
-  home: "M3 11l9-8 9 8M5 10v10h14V10",
-  shield: "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z",
-  bell: "M6 8a6 6 0 1112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0",
-  lock: "M5 11h14v10H5zM8 11V7a4 4 0 018 0v4",
-};
-const Icon = ({ name }: { name: string }) => (
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={ICONS[name]} /></svg>
-);
 const initials = (s: string) => s.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
 
 function Shell({ me, reload }: { me: Me; reload: () => void }) {

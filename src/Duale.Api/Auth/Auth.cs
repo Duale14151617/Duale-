@@ -44,8 +44,18 @@ public class AccessService(AppDbContext db, IConfiguration cfg)
         return !await db.Users.AnyAsync(u => u.Id == userId && u.MfaEnabled, ct);
     }
 
+    // Superadmin = the account whose email is set in Bootstrap:SuperAdminEmail. Full control: every platform permission, access to every
+    // company, and no separation-of-duties blocks. Read from the DB on each call, like every other permission.
+    public async Task<bool> IsSuper(Guid userId, CancellationToken ct)
+    {
+        var e = cfg["Bootstrap:SuperAdminEmail"]?.Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(e)) return false;
+        return await db.Users.AnyAsync(u => u.Id == userId && u.Email == e && u.Status == AccountStatus.Active, ct);
+    }
+
     public async Task<bool> HasPlatform(Guid userId, string permission, CancellationToken ct)
     {
+        if (await IsSuper(userId, ct)) return true;
         var has = await (from a in db.PlatformRoleAssignments
                          join rp in db.RolePermissions on a.RoleCode equals rp.RoleCode
                          where a.UserId == userId && rp.PermissionCode == permission
@@ -55,6 +65,7 @@ public class AccessService(AppDbContext db, IConfiguration cfg)
 
     public async Task<Access> Company(Guid userId, Guid companyId, string permission, CancellationToken ct)
     {
+        if (await IsSuper(userId, ct)) return Access.Allowed;
         var roles = await (from m in db.Memberships
                            join c in db.Companies on m.CompanyId equals c.Id
                            join mr in db.MembershipRoles on m.Id equals mr.MembershipId

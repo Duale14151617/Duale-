@@ -129,7 +129,7 @@ public static class Phase4Endpoints
                 var t = await db.FinancialTerms.FirstOrDefaultAsync(x => x.Id == tid && x.JobId == jobId && x.CompanyId == id, ct);
                 if (t is null) return Results.NotFound();
                 if (t.Status != TermsStatus.Draft) return Err(409, $"These terms are {t.Status}.");
-                if (t.ProposedBy == uid && t.CustomerCharge + t.TechnicianCompensation > Money.SelfApprovalLimit(cfg)) return Err(403, "Terms must be approved by someone other than the person who proposed them.");
+                if (t.ProposedBy == uid && t.CustomerCharge + t.TechnicianCompensation > Money.SelfApprovalLimit(cfg) && !await access.IsSuper(uid, ct)) return Err(403, "Terms must be approved by someone other than the person who proposed them.");
                 if (await db.Payables.AnyAsync(x => x.JobId == jobId && x.Status != "Cancelled", ct)) return Err(409, "Payment obligations already exist for this job.");
                 await using var tx = await db.Database.BeginTransactionAsync(ct);
                 foreach (var old in await db.FinancialTerms.Where(x => x.JobId == jobId && x.Status == TermsStatus.Approved).ToListAsync(ct)) old.Status = TermsStatus.Superseded;
@@ -320,7 +320,7 @@ public static class Phase4Endpoints
                 if (Deny(await access.Company(uid, id, "finance.payment", ct)) is { } d) return d;
                 var x = await db.Payments.FirstOrDefaultAsync(y => y.Id == pid && y.CompanyId == id, ct); if (x is null) return Results.NotFound();
                 if (x.Status != PaymentStatus.Initiated) return Err(409, $"This payment is {x.Status}.");
-                if (x.RecordedBy == uid && x.Amount > Money.SelfApprovalLimit(cfg)) return Err(403, "Payment initiation and confirmation must be done by different people.");
+                if (x.RecordedBy == uid && x.Amount > Money.SelfApprovalLimit(cfg) && !await access.IsSuper(uid, ct)) return Err(403, "Payment initiation and confirmation must be done by different people.");
                 if (x.Method == "cash")
                 {
                     if (string.IsNullOrWhiteSpace(r.AcknowledgedBy) || r.AcknowledgedBy.Length > 120) return Bad("acknowledgedBy (who received or handed over the cash) is required.");
@@ -366,7 +366,7 @@ public static class Phase4Endpoints
                 var x = await db.Payments.FirstOrDefaultAsync(y => y.Id == pid && y.CompanyId == id, ct); if (x is null) return Results.NotFound();
                 if (x.Status != PaymentStatus.Confirmed) return Err(409, $"Only confirmed payments can be reversed; this one is {x.Status}.");
                 if (string.IsNullOrWhiteSpace(r.Reason)) return Bad("reason is required.");
-                if (x.ConfirmedBy == uid && x.Amount > Money.SelfApprovalLimit(cfg)) return Err(403, "A confirmed payment must be reversed by someone other than the person who confirmed it.");
+                if (x.ConfirmedBy == uid && x.Amount > Money.SelfApprovalLimit(cfg) && !await access.IsSuper(uid, ct)) return Err(403, "A confirmed payment must be reversed by someone other than the person who confirmed it.");
                 x.Status = PaymentStatus.Reversed; x.ReversedBy = uid; x.ReversedAt = DateTime.UtcNow; x.ReverseReason = r.Reason.Trim();
                 await Ledger.ReverseAsync(db, id, $"pay-confirm:{x.Id}", $"pay-reverse:{x.Id}", "payment", x.Id.ToString(), uid, ct);
                 await TouchTargetAsync(db, x, ct);
@@ -480,7 +480,7 @@ public static class Phase4Endpoints
                 if (r.Decision is not ("approve" or "reject")) return Bad("decision must be approve or reject.");
                 if (r.Decision == "reject" && string.IsNullOrWhiteSpace(r.Note)) return Bad("note is required when rejecting.");
                 if (x.Status != "Requested") return Err(409, $"This refund is {x.Status}.");
-                if (x.RequestedBy == uid && x.Amount > Money.SelfApprovalLimit(cfg)) return Err(403, "A refund must be decided by someone other than the person who requested it.");
+                if (x.RequestedBy == uid && x.Amount > Money.SelfApprovalLimit(cfg) && !await access.IsSuper(uid, ct)) return Err(403, "A refund must be decided by someone other than the person who requested it.");
                 x.Status = r.Decision == "approve" ? "Approved" : "Rejected"; x.DecidedBy = uid; x.DecidedAt = DateTime.UtcNow; x.DecisionNote = r.Note?.Trim(); x.Seq++;
                 Notifier.Notify(db, x.RequestedBy, id, "finance.refund_decided", "Refund " + x.Status.ToLowerInvariant(), $"Your refund request of {x.Amount} {x.Currency} was {x.Status.ToLowerInvariant()}.");
                 db.Audit(http, uid, "finance.refund_" + x.Status.ToLowerInvariant(), "refund", x.Id.ToString(), id, new { x.Amount, x.Currency });

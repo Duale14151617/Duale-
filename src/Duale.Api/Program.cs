@@ -131,6 +131,19 @@ using (var scope = app.Services.CreateScope())
         db.PlatformRoleAssignments.Add(new PlatformRoleAssignment { UserId = admin.Id, RoleCode = "platform_admin" });
         await db.SaveChangesAsync();
     }
+    // Superadmin: if that account already exists, make sure it holds the platform roles (new sign-ups get them in /auth/register).
+    var superEmail = cfg["Bootstrap:SuperAdminEmail"]?.Trim().ToLowerInvariant();
+    if (!string.IsNullOrEmpty(superEmail))
+    {
+        var su = await db.Users.FirstOrDefaultAsync(u => u.Email == superEmail);
+        if (su is not null)
+        {
+            foreach (var role in new[] { "platform_admin", "platform_finance" })
+                if (!await db.PlatformRoleAssignments.AnyAsync(a => a.UserId == su.Id && a.RoleCode == role))
+                    db.PlatformRoleAssignments.Add(new PlatformRoleAssignment { UserId = su.Id, RoleCode = role });
+            await db.SaveChangesAsync();
+        }
+    }
     // First run only: start the catalogue with Puntland service areas. Add or hide more later in Platform admin > Catalog.
     if (cfg["Database:AutoMigrate"] == "true" && !await db.ServiceAreas.AnyAsync())
     {

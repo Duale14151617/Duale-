@@ -2,12 +2,13 @@ import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { post } from "../api";
 import { Msg, Status, useAction, useLoad, useMe } from "../hooks";
+import { EmptyArt, HeroArt, Icon } from "../icons";
 
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; };
 const initials = (s: string) => s.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
 
-function Kpi({ label, value, tone, to }: { label: string; value: number | string; tone: string; to?: string }) {
-  const inner = (<><span className="kpi-label">{label}</span><span className="kpi-value">{value}</span></>);
+function Kpi({ label, value, tone, to, icon }: { label: string; value: number | string; tone: string; to?: string; icon: string }) {
+  const inner = (<><span className="kpi-icon"><Icon name={icon} size={18} /></span><span className="kpi-label">{label}</span><span className="kpi-value">{value}</span></>);
   return to ? <Link to={to} className={`kpi ${tone}`}>{inner}</Link> : <div className={`kpi ${tone}`}>{inner}</div>;
 }
 
@@ -30,18 +31,19 @@ export default function Companies() {
   return (
     <>
       <section className="hero">
+        <div className="hero-art"><HeroArt /></div>
         <small>{today}</small>
         <h1>{greeting()}, {first}</h1>
         <p>{me.companies.length === 0 ? "Register your company to start receiving and managing jobs." : pending > 0 ? `${pending} of your companies ${pending === 1 ? "is" : "are"} waiting for verification.` : "Everything is verified. Open a company to manage jobs, staff and finance."}</p>
-        <div className="hero-actions"><button className="primary" onClick={() => setShowForm(!showForm)}>{showForm ? "Close form" : "+ Register a company"}</button></div>
+        <div className="hero-actions"><button className="primary" onClick={() => setShowForm(!showForm)}>{showForm ? <><Icon name="x" size={16} /> Close form</> : <><Icon name="plus" size={16} /> Register a company</>}</button></div>
       </section>
 
       <div className="kpis">
-        <Kpi label="Companies" value={me.companies.length} tone="" />
-        <Kpi label="Verified" value={approved} tone="green" />
-        <Kpi label="Pending review" value={pending} tone="amber" />
-        <Kpi label="Unread alerts" value={unread} tone="orange" to="/notifications" />
-        {me.platform.companyVerify && <Kpi label="Awaiting your review" value={queue.data ? queue.data.length : "–"} tone="orange" to="/admin/companies" />}
+        <Kpi label="Companies" value={me.companies.length} tone="" icon="building" />
+        <Kpi label="Verified" value={approved} tone="green" icon="check" />
+        <Kpi label="Pending review" value={pending} tone="amber" icon="clock" />
+        <Kpi label="Unread alerts" value={unread} tone="orange" to="/notifications" icon="bell" />
+        {me.platform.companyVerify && <Kpi label="Awaiting your review" value={queue.data ? queue.data.length : "–"} tone="orange" to="/admin/companies" icon="shield" />}
       </div>
 
       {showForm && (
@@ -61,7 +63,7 @@ export default function Companies() {
 
       <div className="section-head"><h2>Your companies</h2></div>
       {me.companies.length === 0 ? (
-        <div className="empty">You are not part of a company yet.</div>
+        <div className="empty"><EmptyArt /><div>You are not part of a company yet.</div></div>
       ) : (
         <div className="cgrid">
           {me.companies.map((c) => (

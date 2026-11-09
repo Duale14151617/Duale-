@@ -2,6 +2,9 @@ import { useState } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { openFile, post } from "../api";
 import { Msg, Status, useAction, useLoad, useMe, when } from "../hooks";
+import { Icon } from "../icons";
+
+const TAB_ICONS: Record<string, string> = { companies: "building", documents: "file", skills: "star", catalog: "list", support: "users" };
 
 // Platform administration: verification queues, catalog, service areas and account support.
 // The links shown depend on the signed-in user's platform permissions; the backend enforces them on every call.
@@ -12,7 +15,7 @@ export default function Admin() {
     <>
       <h1>Platform administration</h1>
       <nav className="row" style={{ marginBottom: 12 }}>
-        {tabs.map((t) => <NavLink key={t} to={`/admin/${t}`} className={({ isActive }) => (isActive ? "pill Active" : "pill")} style={{ padding: "6px 12px", textDecoration: "none", color: "inherit" }}>{t[0].toUpperCase() + t.slice(1)}</NavLink>)}
+        {tabs.map((t) => <NavLink key={t} to={`/admin/${t}`} className={({ isActive }) => (isActive ? "pill Active" : "pill")} style={{ padding: "6px 12px", textDecoration: "none", color: "inherit" }}><Icon name={TAB_ICONS[t]} size={16} />{t[0].toUpperCase() + t.slice(1)}</NavLink>)}
       </nav>
       <Routes>
         {p.companyVerify && <Route path="companies" element={<CompanyQueue />} />}
@@ -31,9 +34,9 @@ function Decision({ onDecide, busy }: { onDecide: (decision: string, note: strin
   return (
     <div className="row">
       <input placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
-      <button className="primary" disabled={busy} onClick={() => onDecide("approve", note)}>Approve</button>
+      <button className="primary" disabled={busy} onClick={() => onDecide("approve", note)}><Icon name="check" size={16} />Approve</button>
       <button className="ghost" disabled={busy} onClick={() => onDecide("request_info", note)}>Request info</button>
-      <button className="danger" disabled={busy} onClick={() => onDecide("reject", note)}>Reject</button>
+      <button className="danger" disabled={busy} onClick={() => onDecide("reject", note)}><Icon name="x" size={16} />Reject</button>
     </div>
   );
 }

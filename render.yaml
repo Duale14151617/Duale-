@@ -38,6 +38,8 @@ services:
         value: /data/files
       - key: Web__ServeSpa
         value: "true"
+      - key: Bootstrap__SuperAdminEmail
+        value: updallaahmett08@gmail.com
       - key: Security__TrustProxy
         value: "true"            # Render terminates TLS and forwards X-Forwarded-*
       - key: Scanner__AllowNoop

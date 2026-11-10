@@ -34,11 +34,18 @@ public static class Phase8Endpoints
         foreach (var old in await db.VerificationCodes.Where(x => x.UserId == uid && x.Channel == channel && x.UsedAt == null).ToListAsync(ct)) old.UsedAt = now;
         var code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
         var expires = now.AddMinutes(15);
-        db.VerificationCodes.Add(new VerificationCode { UserId = uid, Channel = channel, Target = target, CodeHash = Hash(uid, channel, target, code), ExpiresAt = expires });
+        var row = new VerificationCode { UserId = uid, Channel = channel, Target = target, CodeHash = Hash(uid, channel, target, code), ExpiresAt = expires };
+        db.VerificationCodes.Add(row);
         db.Audit(http, uid, $"user.{channel}_verification_requested", "user", uid.ToString());
         await db.SaveChangesAsync(ct);
         try { await delivery.SendAsync(via, target, code, expires, ct); }
-        catch (Exception ex) when (ex is not OperationCanceledException) { return Results.Json(new { error = "The code could not be sent. Try again later." }, statusCode: 502); }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            http.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Verification").LogError(ex, "Could not send the {Channel} verification code", channel);
+            row.UsedAt = DateTime.UtcNow; row.CreatedAt = now.AddMinutes(-5);   // a failed send must not lock the user out for a minute
+            await db.SaveChangesAsync(CancellationToken.None);
+            return Results.Json(new { error = "The code could not be sent. Try again later." }, statusCode: 502);
+        }
         return Results.NoContent();
     }
 

@@ -42,6 +42,7 @@ if (cfg["Security:TrustProxy"] == "true")
     { o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto; o.KnownNetworks.Clear(); o.KnownProxies.Clear(); });
 if (builder.Environment.IsDevelopment()) builder.Services.AddSingleton<Duale.Api.Services.IRecoveryDelivery, Duale.Api.Services.ConsoleRecoveryDelivery>();
 else builder.Services.AddSingleton<Duale.Api.Services.IRecoveryDelivery, Duale.Api.Services.NotConfiguredRecoveryDelivery>();
+builder.Services.AddScoped<Duale.Api.Services.IVerificationDelivery, Duale.Api.Services.VerificationDelivery>();
 builder.Services.AddScoped<Duale.Api.Services.NotificationDispatcher>();
 builder.Services.AddScoped<Duale.Api.Services.ReminderService>();
 builder.Services.AddScoped<Duale.Api.Services.OutboxDispatcher>();   // no IOutboxPublisher is registered: consumers are not chosen yet
@@ -119,7 +120,11 @@ Endpoints.Map(app);
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    if (cfg["Database:AutoMigrate"] == "true") await db.Database.MigrateAsync();
+    if (cfg["Database:AutoMigrate"] == "true")
+    {
+        await db.Database.MigrateAsync();
+        if (db.Database.IsNpgsql()) await Duale.Api.Data.SchemaPatches.ApplyAsync(db);   // adds tables/columns newer than the committed migrations
+    }
     var email = cfg["Bootstrap:AdminEmail"]?.Trim().ToLowerInvariant();
     var pw = cfg["Bootstrap:AdminPassword"];
     if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(pw) && !await db.Users.AnyAsync(u => u.Email == email))

@@ -253,7 +253,9 @@ public static class Endpoints
             if (string.IsNullOrWhiteSpace(r.DisplayName)) return Bad("displayName is required.");
             var t = await db.Technicians.FirstOrDefaultAsync(x => x.UserId == uid, ct);
             if (t is null) return Results.NotFound();
-            t.DisplayName = r.DisplayName.Trim(); t.Phone = r.Phone?.Trim();
+            var newPhone = r.Phone?.Trim();
+            if (!string.Equals(t.Phone, newPhone, StringComparison.Ordinal)) t.PhoneVerifiedAt = null;   // a new number must be verified again
+            t.DisplayName = r.DisplayName.Trim(); t.Phone = newPhone;
             db.Audit(http, uid, "technician.updated", "technician", t.Id.ToString());
             await db.SaveChangesAsync(ct);
             return Results.Ok(new { t.Id, t.DisplayName, t.Phone });
@@ -274,7 +276,7 @@ public static class Endpoints
                 x.Id, x.Name, verification = x.Verification.ToString(), x.ExpiresOn,
                 eligible = new TechnicianSkill { Verification = x.Verification, ExpiresOn = x.ExpiresOn }.IsEligible(today)
             });
-            return Results.Ok(new { t.Id, t.DisplayName, t.Phone, skills });
+            return Results.Ok(new { t.Id, t.DisplayName, t.Phone, phoneVerified = t.PhoneVerifiedAt != null, skills });
         });
 
         // Replace the set of claimed skills. Newly claimed skills start Pending; existing reviews are preserved.
@@ -317,6 +319,7 @@ public static class Endpoints
         Phase4Endpoints.Map(app, api);
         Phase5Endpoints.Map(api);
         Phase7Endpoints.Map(api);
+        Phase8Endpoints.Map(api);
         Foundation2Endpoints.Map(app, anon, api);
     }
 }

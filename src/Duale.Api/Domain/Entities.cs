@@ -17,6 +17,7 @@ public class User
     public long MfaLastStep { get; set; }              // last accepted TOTP step (replay protection)
     public int MfaFailures { get; set; }
     public DateTime? MfaLockedUntil { get; set; }
+    public DateTime? EmailVerifiedAt { get; set; }     // set when the person confirms a code sent to Email
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
@@ -92,6 +93,7 @@ public class Technician
     public Guid UserId { get; set; }
     public string DisplayName { get; set; } = "";
     public string? Phone { get; set; }
+    public DateTime? PhoneVerifiedAt { get; set; }     // cleared whenever the phone number changes
     public AccountStatus Status { get; set; } = AccountStatus.Active;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

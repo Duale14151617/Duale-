@@ -55,6 +55,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<OutboxEvent> OutboxEvents => Set<OutboxEvent>();
     public DbSet<PlatformSubscription> Subscriptions => Set<PlatformSubscription>();
     public DbSet<IntegrationAccount> IntegrationAccounts => Set<IntegrationAccount>();
+    public DbSet<JobRating> JobRatings => Set<JobRating>();
+    public DbSet<VerificationCode> VerificationCodes => Set<VerificationCode>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder c)
     {
@@ -125,6 +127,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         ModelPhase3.Configure(b);
         ModelPhase4.Configure(b);
         ModelPhase7.Configure(b);
+        ModelPhase8.Configure(b);
 
         b.Entity<Role>().HasData(Seed.Roles.Select(r => new Role { Code = r.Key, Scope = r.Value.Scope }));
         b.Entity<Permission>().HasData(Seed.Permissions.Select(p => new Permission { Code = p }));

@@ -3,6 +3,27 @@ import { Link } from "react-router-dom";
 import { post } from "../../api";
 import { Msg, Status, useAction, useLoad, when } from "../../hooks";
 
+function RatingBox({ companyId, jobId }: { companyId: string; jobId: string }) {
+  const url = `/companies/${companyId}/jobs/${jobId}/rating`;
+  const { data, error, reload } = useLoad<any>(url);
+  const [stars, setStars] = useState(5); const [comment, setComment] = useState("");
+  const a = useAction();
+  if (error) return null;   // no permission to read ratings, or the job is not visible
+  if (!data) return null;
+  if (data.rated) return <div><h2>Rating</h2><div>{"★".repeat(data.stars)}{"☆".repeat(5 - data.stars)} {data.comment}</div></div>;
+  return (
+    <div>
+      <h2>Rate the technician</h2>
+      <div className="row">
+        <label>Stars<select value={stars} onChange={(e) => setStars(Number(e.target.value))}>{[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n}</option>)}</select></label>
+        <label>Comment (optional)<input value={comment} maxLength={1000} onChange={(e) => setComment(e.target.value)} /></label>
+        <button className="primary" disabled={a.busy} onClick={async () => { if (await a.run(() => post(url, { stars, comment: comment || undefined }), "Rating saved.")) reload(); }}>Submit rating</button>
+      </div>
+      <Msg error={a.error} notice={a.notice} />
+    </div>
+  );
+}
+
 export default function Jobs({ companyId }: { companyId: string }) {
   const jobs = useLoad<any[]>(`/companies/${companyId}/jobs`);
   const customers = useLoad<any[]>(`/companies/${companyId}/customers`);
@@ -60,6 +81,7 @@ export default function Jobs({ companyId }: { companyId: string }) {
             {["Offered"].includes(detail.data.status) && <button className="ghost" onClick={async () => { if (await a.run(() => post(`/companies/${companyId}/jobs/${open}/withdraw`, { reason: "Withdrawn" }))) refreshAll(); }}>Withdraw offer</button>}
             {!["Cancelled", "Completed"].includes(detail.data.status) && <button className="danger" onClick={async () => { const reason = prompt("Reason for cancelling?"); if (reason && await a.run(() => post(`/companies/${companyId}/jobs/${open}/cancel`, { reason }))) refreshAll(); }}>Cancel job</button>}
           </div>
+          {detail.data.status === "Completed" && <RatingBox companyId={companyId} jobId={open} />}
           <h2>History</h2>
           {detail.data.history.map((h: any, i: number) => <div key={i} className="muted">{when(h.at)}: {h.fromStatus ?? "—"} → {h.to} {h.reason}</div>)}
           <Msg error={a.error} notice={a.notice} />

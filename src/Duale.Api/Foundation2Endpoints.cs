@@ -53,7 +53,7 @@ public static class Foundation2Endpoints
                                                 roles = db.MembershipRoles.Where(r => r.MembershipId == m.Id).Select(r => r.RoleCode).ToList() }).ToListAsync(ct);
             return Results.Ok(new
             {
-                u.Id, u.Email, u.DisplayName, u.MfaEnabled,
+                u.Id, u.Email, u.DisplayName, u.MfaEnabled, emailVerified = u.EmailVerifiedAt != null,
                 isTechnician = await db.Technicians.AnyAsync(t => t.UserId == uid, ct),
                 platform = new
                 {

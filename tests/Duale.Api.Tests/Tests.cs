@@ -17,6 +17,13 @@ public class CapturingDelivery : Duale.Api.Services.IRecoveryDelivery
     public Task SendAsync(string email, string token, DateTime expiresAt, CancellationToken ct) { Tokens[email] = token; return Task.CompletedTask; }
 }
 
+public class CapturingVerification : Duale.Api.Services.IVerificationDelivery
+{
+    public System.Collections.Concurrent.ConcurrentDictionary<string, string> Codes { get; } = new();   // key: "email:<address>" or "sms:<number>"
+    public bool CanSend(string channel) => true;
+    public Task SendAsync(string channel, string target, string code, DateTime expiresAt, CancellationToken ct) { Codes[$"{channel}:{target}"] = code; return Task.CompletedTask; }
+}
+
 public class ApiFactory : WebApplicationFactory<Program>
 {
     const string Password = "correct-horse-battery";
@@ -24,6 +31,7 @@ public class ApiFactory : WebApplicationFactory<Program>
     readonly SqliteConnection _conn = new("DataSource=:memory:");
     int _n;
     public CapturingDelivery Delivery { get; } = new();
+    public CapturingVerification Verification { get; } = new();
 
     public ApiFactory()
     {
@@ -36,14 +44,22 @@ public class ApiFactory : WebApplicationFactory<Program>
         Environment.SetEnvironmentVariable("Files__Root", Path.Combine(Path.GetTempPath(), "duale-test-files-" + Guid.NewGuid().ToString("N")));
     }
 
-    protected override void ConfigureWebHost(IWebHostBuilder b) => b.ConfigureServices(s =>
+    protected override void ConfigureWebHost(IWebHostBuilder b)
+    {
+    // Invitations require a verified phone in production. Most tests invite freshly made technicians, so they run with the rule off;
+    // Phase8Tests turns it on for the test that checks it.
+    b.UseSetting("Verification:RequirePhoneForInvites", "false");
+    b.ConfigureServices(s =>
     {
         s.Remove(s.Single(d => d.ServiceType == typeof(DbContextOptions<AppDbContext>)));
         s.AddDbContext<AppDbContext>(o => o.UseSqlite(_conn));
         s.Remove(s.Single(d => d.ServiceType == typeof(Duale.Api.Services.IRecoveryDelivery)));
         s.AddSingleton(Delivery);
         s.AddSingleton<Duale.Api.Services.IRecoveryDelivery>(Delivery);
+        s.Remove(s.Single(d => d.ServiceType == typeof(Duale.Api.Services.IVerificationDelivery)));
+        s.AddSingleton<Duale.Api.Services.IVerificationDelivery>(Verification);
     });
+    }
 
     public async Task<(HttpClient Client, string Email)> UserAsync(string? platformRole = null)
     {

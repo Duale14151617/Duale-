@@ -47,7 +47,7 @@ public static class Phase2Endpoints
     public static void Map(RouteGroupBuilder api)
     {
         // ======== Technician <-> company relationships ========
-        api.MapPost("/companies/{id:guid}/relationships", async Task<IResult> (Guid id, InviteReq r, ClaimsPrincipal p, AppDbContext db, AccessService access, HttpContext http, CancellationToken ct) =>
+        api.MapPost("/companies/{id:guid}/relationships", async Task<IResult> (Guid id, InviteReq r, ClaimsPrincipal p, AppDbContext db, AccessService access, IConfiguration cfg, HttpContext http, CancellationToken ct) =>
         {
             var uid = Uid(p);
             if (Deny(await access.Company(uid, id, "relationship.manage", ct)) is { } d) return d;
@@ -57,6 +57,10 @@ public static class Phase2Endpoints
             var tech = await (from u in db.Users join t in db.Technicians on u.Id equals t.UserId
                               where u.Email == email && u.Status == AccountStatus.Active select t).FirstOrDefaultAsync(ct);
             if (tech is null) return Results.NotFound(new { error = "No technician profile for that email." });
+            // Required by default: a technician must have a verified phone number before a company can invite them.
+            // Escape hatch: set Verification__RequirePhoneForInvites=false (e.g. while no SMS provider can deliver codes yet).
+            if (cfg["Verification:RequirePhoneForInvites"] != "false" && tech.PhoneVerifiedAt is null)
+                return Results.Conflict(new { error = "This technician has not verified their phone number yet. Ask them to verify it in their profile, then invite them again." });
             var skills = await db.TechnicianSkills.Where(s => s.TechnicianId == tech.Id).ToListAsync(ct);
             if (!skills.Any(s => s.IsEligible(DateOnly.FromDateTime(DateTime.UtcNow))))
                 return Results.Conflict(new { error = "Technician has no verified skills yet." });
@@ -80,8 +84,9 @@ public static class Phase2Endpoints
             if (Deny(await access.Company(Uid(p), id, "relationship.read", ct)) is { } d) return d;
             var rows = await (from r in db.Relationships join t in db.Technicians on r.TechnicianId equals t.Id
                               where r.CompanyId == id orderby t.DisplayName
-                              select new { r.Id, r.TechnicianId, technician = t.DisplayName, r.Type, r.Status, r.ValidFrom, r.ValidTo }).ToListAsync(ct);
-            return Results.Ok(rows.Select(x => new { x.Id, x.TechnicianId, x.technician, type = x.Type.ToString(), status = x.Status.ToString(), x.ValidFrom, x.ValidTo }));
+                              select new { r.Id, r.TechnicianId, technician = t.DisplayName, r.Type, r.Status, r.ValidFrom, r.ValidTo, phoneVerified = t.PhoneVerifiedAt != null,
+                                           rating = db.JobRatings.Where(q => q.TechnicianId == t.Id).Average(q => (double?)q.Stars), ratingCount = db.JobRatings.Count(q => q.TechnicianId == t.Id) }).ToListAsync(ct);
+            return Results.Ok(rows.Select(x => new { x.Id, x.TechnicianId, x.technician, type = x.Type.ToString(), status = x.Status.ToString(), x.ValidFrom, x.ValidTo, x.phoneVerified, rating = x.rating == null ? (double?)null : Math.Round(x.rating.Value, 2), x.ratingCount }));
         });
 
         api.MapPost("/companies/{id:guid}/relationships/{relId:guid}/action", async Task<IResult> (Guid id, Guid relId, RelActionReq r, ClaimsPrincipal p, AppDbContext db, AccessService access, HttpContext http, CancellationToken ct) =>

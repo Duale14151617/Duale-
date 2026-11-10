@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { post } from "../api";
 import { Msg, useAction, useMe } from "../hooks";
+import VerifyBox from "./VerifyBox";
 
 export default function Security() {
   const { me, reload } = useMe();
@@ -12,6 +13,11 @@ export default function Security() {
   return (
     <>
       <h1>Security</h1>
+      <div className="card">
+        <h2>Email</h2>
+        <p className="muted">{me.email}</p>
+        <VerifyBox channel="email" verified={!!me.emailVerified} onVerified={reload} />
+      </div>
       <div className="card">
         <h2>Two-factor authentication</h2>
         <p>Status: <b>{me.mfaEnabled ? "On" : "Off"}</b></p>

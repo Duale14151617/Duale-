@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { get } from "./api";
 
 export type Me = {
-  id: string; email: string; displayName: string; mfaEnabled: boolean; isTechnician: boolean;
+  id: string; email: string; displayName: string; mfaEnabled: boolean; emailVerified?: boolean; isTechnician: boolean;
   platform: { companyVerify: boolean; technicianVerify: boolean; catalog: boolean; support: boolean };
   companies: { id: string; displayName: string; verification: string; roles: string[] }[];
 };

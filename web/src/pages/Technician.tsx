@@ -1,12 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
-import { NavLink, Route, Routes } from "react-router-dom";
 import { ApiError, post, put, upload } from "../api";
 import { Msg, Status, errText, useAction, useLoad, useMe, when } from "../hooks";
 import { useT } from "../i18n";
 import VerifyBox from "./VerifyBox";
-import Jobs from "./technician/Jobs";
-import Availability from "./technician/Availability";
-import Earnings from "./technician/Earnings";
 
 type Skill = { id: string; name: string; verification: string; expiresOn?: string | null; eligible: boolean };
 type Profile = { id: string; displayName: string; phone?: string | null; phoneVerified?: boolean; skills: Skill[] };
@@ -20,27 +16,7 @@ export default function Technician() {
   if (profile.loading && !profile.data) return <div className="card">Loading…</div>;
   if (missing) return <CreateProfile defaultName={me.displayName} onDone={() => { profile.reload(); reloadMe(); }} />;
   if (profile.error || !profile.data) return <div className="card"><Msg error={profile.error} /></div>;
-  return <Shell profile={profile.data} reload={profile.reload} />;
-}
-
-function Shell({ profile, reload }: { profile: Profile; reload: () => void }) {
-  const { t } = useT();
-  const tabs = [["", "Profile"], ["jobs", "Jobs"], ["availability", "Availability"], ["earnings", "Earnings"]];
-  return (
-    <>
-      <nav className="row" style={{ marginBottom: 12 }}>
-        {tabs.map(([to, label]) => (
-          <NavLink key={to} to={`/technician${to ? "/" + to : ""}`} end={to === ""} className={({ isActive }) => (isActive ? "pill Active" : "pill")} style={{ padding: "6px 12px", textDecoration: "none", color: "inherit" }}>{t(label)}</NavLink>
-        ))}
-      </nav>
-      <Routes>
-        <Route index element={<Dashboard profile={profile} reload={reload} />} />
-        <Route path="jobs/*" element={<Jobs />} />
-        <Route path="availability" element={<Availability />} />
-        <Route path="earnings" element={<Earnings />} />
-      </Routes>
-    </>
-  );
+  return <Dashboard profile={profile.data} reload={profile.reload} />;
 }
 
 function CreateProfile({ defaultName, onDone }: { defaultName: string; onDone: () => void }) {

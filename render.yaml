@@ -52,3 +52,16 @@ services:
         value: cash,bank,mobile_money,other
       - key: Finance__SelfApprovalLimit
         value: "0"
+      # Email over Gmail SMTP. Values are asked for / set in the Render dashboard (never commit the app password).
+      - key: Smtp__Host
+        value: smtp.gmail.com
+      - key: Smtp__Port
+        value: "587"
+      - key: Smtp__User
+        sync: false
+      - key: Smtp__Password
+        sync: false
+      - key: Smtp__From
+        sync: false
+      - key: Smtp__FromName
+        value: Duale

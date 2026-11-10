@@ -42,6 +42,7 @@ if (cfg["Security:TrustProxy"] == "true")
     { o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto; o.KnownNetworks.Clear(); o.KnownProxies.Clear(); });
 if (builder.Environment.IsDevelopment()) builder.Services.AddSingleton<Duale.Api.Services.IRecoveryDelivery, Duale.Api.Services.ConsoleRecoveryDelivery>();
 else builder.Services.AddSingleton<Duale.Api.Services.IRecoveryDelivery, Duale.Api.Services.NotConfiguredRecoveryDelivery>();
+if (!string.IsNullOrEmpty(cfg["Smtp:Host"])) builder.Services.AddSingleton<Duale.Api.Services.INotificationProvider, Duale.Api.Services.SmtpEmailProvider>();
 builder.Services.AddScoped<Duale.Api.Services.IVerificationDelivery, Duale.Api.Services.VerificationDelivery>();
 builder.Services.AddScoped<Duale.Api.Services.NotificationDispatcher>();
 builder.Services.AddScoped<Duale.Api.Services.ReminderService>();

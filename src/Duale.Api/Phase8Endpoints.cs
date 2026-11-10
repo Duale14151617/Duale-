@@ -39,7 +39,7 @@ public static class Phase8Endpoints
         db.Audit(http, uid, $"user.{channel}_verification_requested", "user", uid.ToString());
         await db.SaveChangesAsync(ct);
         try { await delivery.SendAsync(via, target, code, expires, ct); }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex)
         {
             http.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Verification").LogError(ex, "Could not send the {Channel} verification code", channel);
             row.UsedAt = DateTime.UtcNow; row.CreatedAt = now.AddMinutes(-5);   // a failed send must not lock the user out for a minute

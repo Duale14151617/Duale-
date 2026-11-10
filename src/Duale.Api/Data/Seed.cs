@@ -34,4 +34,22 @@ public static class Seed
 
     public static IEnumerable<Trade> Trades() =>
         TradeNames.Select((n, i) => new Trade { Id = new Guid(i + 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), Name = n });
+
+    // Starter skills so technicians have something to tick on a fresh install. Inserted once, only when the Skills table is empty;
+    // platform admins can add or hide skills afterwards (Platform admin > Catalog).
+    static readonly Dictionary<string, string[]> StarterSkillNames = new()
+    {
+        ["Furniture assembly"] = ["Flat-pack furniture assembly", "Wardrobe and cabinet installation", "Office furniture setup"],
+        ["Plumbing"] = ["Pipe installation and repair", "Leak detection and repair", "Water tank and pump installation", "Bathroom and toilet fittings", "Drain unblocking"],
+        ["Electrical work"] = ["House wiring", "Socket, switch and light installation", "Distribution board and breaker work", "Solar panel and inverter installation", "Fault finding and repair"],
+        ["Masonry"] = ["Block and brick laying", "Plastering and rendering", "Concrete and foundation work", "Fencing and boundary walls"],
+        ["Painting"] = ["Interior painting", "Exterior painting", "Wall preparation and putty", "Decorative finishes"],
+        ["Tiling"] = ["Floor tiling", "Wall tiling", "Grouting and tile repair"],
+        ["Carpentry"] = ["Door and window frames", "Roof timber work", "Built-in cabinets and shelving", "Furniture repair"],
+        ["Fittings"] = ["Door and lock fitting", "Window and glass fitting", "Curtain rail and blind fitting", "Gate and grille fitting"],
+        ["Maintenance"] = ["General building repairs", "Preventive maintenance rounds", "Generator servicing", "Air conditioner servicing"],
+    };
+
+    public static IEnumerable<Skill> StarterSkills() =>
+        Trades().SelectMany(t => StarterSkillNames.TryGetValue(t.Name, out var names) ? names.Select(n => new Skill { TradeId = t.Id, Name = n }) : []);
 }

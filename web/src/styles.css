@@ -42,9 +42,9 @@ h2 { font-size:1.08rem; font-weight:700; letter-spacing:-.01em; margin:1.4rem 0 
 @keyframes toast { 0% { opacity:0; transform:translateY(12px) scale(.96); } 8%,82% { opacity:1; transform:none; } 100% { opacity:0; transform:translateY(8px); visibility:hidden; } }
 @keyframes shimmer { 0% { background-position:-200px 0; } 100% { background-position:calc(200px + 100%) 0; } }
 @keyframes pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.07); } }
-main > * { animation:rise .45s cubic-bezier(.2,.7,.2,1) both; }
+main > * { animation:rise .45s cubic-bezier(.2,.7,.2,1) backwards; }
 main > *:nth-child(2) { animation-delay:.05s; } main > *:nth-child(3) { animation-delay:.1s; } main > *:nth-child(4) { animation-delay:.15s; } main > *:nth-child(n+5) { animation-delay:.2s; }
-.kpis .kpi { animation:rise .45s cubic-bezier(.2,.7,.2,1) both; }
+.kpis .kpi { animation:rise .45s cubic-bezier(.2,.7,.2,1) backwards; }
 .kpis .kpi:nth-child(2) { animation-delay:.06s; } .kpis .kpi:nth-child(3) { animation-delay:.12s; } .kpis .kpi:nth-child(4) { animation-delay:.18s; } .kpis .kpi:nth-child(5) { animation-delay:.24s; }
 .skeleton { border-radius:10px; background:linear-gradient(90deg,var(--chip) 0px,var(--surface-2) 100px,var(--chip) 200px); background-size:200px 100%; animation:shimmer 1.3s infinite linear; min-height:14px; }
 

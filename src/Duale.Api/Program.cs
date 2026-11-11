@@ -41,6 +41,7 @@ if (cfg["Security:TrustProxy"] == "true")
     builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(o =>
     { o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto; o.KnownNetworks.Clear(); o.KnownProxies.Clear(); });
 if (builder.Environment.IsDevelopment()) builder.Services.AddSingleton<Duale.Api.Services.IRecoveryDelivery, Duale.Api.Services.ConsoleRecoveryDelivery>();
+else if (!string.IsNullOrEmpty(cfg["Brevo:ApiKey"]) || !string.IsNullOrEmpty(cfg["Smtp:Host"])) builder.Services.AddSingleton<Duale.Api.Services.IRecoveryDelivery, Duale.Api.Services.EmailRecoveryDelivery>();
 else builder.Services.AddSingleton<Duale.Api.Services.IRecoveryDelivery, Duale.Api.Services.NotConfiguredRecoveryDelivery>();
 if (!string.IsNullOrEmpty(cfg["Brevo:ApiKey"])) builder.Services.AddSingleton<Duale.Api.Services.INotificationProvider, Duale.Api.Services.BrevoEmailProvider>();
 else if (!string.IsNullOrEmpty(cfg["Smtp:Host"])) builder.Services.AddSingleton<Duale.Api.Services.INotificationProvider, Duale.Api.Services.SmtpEmailProvider>();
@@ -127,7 +128,6 @@ using (var scope = app.Services.CreateScope())
         await db.Database.MigrateAsync();
         if (db.Database.IsNpgsql()) await Duale.Api.Data.SchemaPatches.ApplyAsync(db);   // adds tables/columns newer than the committed migrations
     }
-    if (cfg["Database:AutoMigrate"] == "true") await Duale.Api.Data.DemoReset.RunIfRequestedAsync(db, cfg, app.Logger);
     var email = cfg["Bootstrap:AdminEmail"]?.Trim().ToLowerInvariant();
     var pw = cfg["Bootstrap:AdminPassword"];
     if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(pw) && !await db.Users.AnyAsync(u => u.Email == email))

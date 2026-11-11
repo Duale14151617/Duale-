@@ -11,7 +11,8 @@ using static Duale.Api.Phase2Endpoints;
 namespace Duale.Api;
 
 public record RatingReq(int? Stars, string? Comment);
-public record VerifyConfirmReq(string? Code);
+public record VerifyConfirmReq(string? Code, string? Email = null);
+public record VerifyEmailReq(string? Email, string? Password = null);
 
 // Technician ratings and email / phone verification.
 public static class Phase8Endpoints
@@ -47,6 +48,17 @@ public static class Phase8Endpoints
             return Results.Json(new { error = "The code could not be sent. Try again later." }, statusCode: 502);
         }
         return Results.NoContent();
+    }
+
+    // Normalises an address the person typed. Returns null when it is not a plausible email address.
+    static string? CleanEmail(string? raw)
+    {
+        var e = (raw ?? "").Trim().ToLowerInvariant();
+        if (e.Length is 0 or > 254) return null;
+        try { var a = new System.Net.Mail.MailAddress(e); if (a.Address != e) return null; }
+        catch (FormatException) { return null; }
+        var host = e[(e.IndexOf('@') + 1)..];
+        return host.Contains('.') && !host.StartsWith('.') && !host.EndsWith('.') ? e : null;
     }
 
     // Checks the code for the address as it is right now (changing the address invalidates earlier codes). On success the code is
@@ -114,23 +126,42 @@ public static class Phase8Endpoints
         });
 
         // ======== Email / phone verification ========
-        api.MapPost("/me/verify/email/request", async Task<IResult> (ClaimsPrincipal p, AppDbContext db, IVerificationDelivery delivery, HttpContext http, CancellationToken ct) =>
+        // The code goes to the address the person types (or, with none, to the account address). Confirming a different address
+        // makes it the account's sign-in email, so codes and notices from then on go there.
+        api.MapPost("/me/verify/email/request", async Task<IResult> (VerifyEmailReq r, ClaimsPrincipal p, AppDbContext db, IVerificationDelivery delivery, Microsoft.AspNetCore.Identity.IPasswordHasher<User> hasher, HttpContext http, CancellationToken ct) =>
         {
             var uid = Uid(p);
             var u = await db.Users.FirstAsync(x => x.Id == uid, ct);
-            if (u.EmailVerifiedAt is not null) return Results.Conflict(new { error = "Email is already verified." });
-            return await RequestCode("email", u.Email, uid, db, delivery, http, ct);
+            var target = string.IsNullOrWhiteSpace(r.Email) ? u.Email : CleanEmail(r.Email);
+            if (target is null) return Bad("Enter a valid email address.");
+            var changing = target != u.Email;
+            if (!changing && u.EmailVerifiedAt is not null) return Results.Conflict(new { error = "Email is already verified." });
+            if (changing)
+            {
+                // Changing the sign-in email needs the current password, so a stolen session alone cannot take over the account.
+                if (string.IsNullOrEmpty(r.Password) || hasher.VerifyHashedPassword(u, u.PasswordHash, r.Password) == Microsoft.AspNetCore.Identity.PasswordVerificationResult.Failed)
+                    return Bad("Enter your current password to change your email.");
+                if (await db.Users.AnyAsync(x => x.Email == target && x.Id != uid, ct)) return Results.Conflict(new { error = "That email is already used by another account." });
+            }
+            return await RequestCode("email", target, uid, db, delivery, http, ct);
         });
 
         api.MapPost("/me/verify/email/confirm", async Task<IResult> (VerifyConfirmReq r, ClaimsPrincipal p, AppDbContext db, HttpContext http, CancellationToken ct) =>
         {
             var uid = Uid(p);
             var u = await db.Users.FirstAsync(x => x.Id == uid, ct);
-            var (ok, error) = await CheckCode("email", u.Email, uid, r.Code, db, ct);
+            var target = string.IsNullOrWhiteSpace(r.Email) ? u.Email : CleanEmail(r.Email);
+            if (target is null) return Bad("Enter a valid email address.");
+            var changing = target != u.Email;
+            if (changing && await db.Users.AnyAsync(x => x.Email == target && x.Id != uid, ct)) return Results.Conflict(new { error = "That email is already used by another account." });
+            var (ok, error) = await CheckCode("email", target, uid, r.Code, db, ct);
             if (!ok) return Bad(error!);
+            var old = u.Email;
+            u.Email = target;
             u.EmailVerifiedAt = DateTime.UtcNow;
-            db.Audit(http, uid, "user.email_verified", "user", uid.ToString());
-            await db.SaveChangesAsync(ct);
+            db.Audit(http, uid, changing ? "user.email_changed" : "user.email_verified", "user", uid.ToString(), null, changing ? new { from = old, to = target } : null);
+            try { await db.SaveChangesAsync(ct); }
+            catch (DbUpdateException) { return Results.Conflict(new { error = "That email is already used by another account." }); }
             return Results.NoContent();
         });
 

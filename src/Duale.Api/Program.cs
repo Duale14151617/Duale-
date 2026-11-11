@@ -127,6 +127,7 @@ using (var scope = app.Services.CreateScope())
         await db.Database.MigrateAsync();
         if (db.Database.IsNpgsql()) await Duale.Api.Data.SchemaPatches.ApplyAsync(db);   // adds tables/columns newer than the committed migrations
     }
+    if (cfg["Database:AutoMigrate"] == "true") await Duale.Api.Data.DemoReset.RunIfRequestedAsync(db, cfg, app.Logger);
     var email = cfg["Bootstrap:AdminEmail"]?.Trim().ToLowerInvariant();
     var pw = cfg["Bootstrap:AdminPassword"];
     if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(pw) && !await db.Users.AnyAsync(u => u.Email == email))

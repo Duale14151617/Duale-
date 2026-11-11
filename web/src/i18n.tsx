@@ -47,7 +47,7 @@ const SO: Record<string, string> = {
   "Invite a technician": "U yeer farsamoyaqaan", "Invite": "Martiqaad", "Technician email": "Iimaylka farsamoyaqaanka", "Copy link": "Koobi linkiga", "Copied": "Waa la koobiyay",
   "Import technicians from CSV": "Ka soo dhoofi farsamoyaqaanno CSV", "Import": "Soo dhoofi",
   // language
-  "Language": "Luqad", "Verification": "Xaqiijin", "Verified": "La xaqiijiyay", "Not verified": "Aan la xaqiijin", "Send code": "Dir koodhka", "Code": "Koodh", "Confirm": "Xaqiiji", "Ratings": "Qiimeynaha",
+  "Language": "Luqad", "Verification": "Xaqiijin", "Verified": "La xaqiijiyay", "Not verified": "Aan la xaqiijin", "Send code": "Dir koodhka", "Use a different email": "Isticmaal iimayl kale", "Email address": "Ciwaanka iimaylka", "Change address": "Beddel ciwaanka", "Current password": "Erayga sirta ah ee hadda", "Code": "Koodh", "Confirm": "Xaqiiji", "Ratings": "Qiimeynaha",
   "Add a phone number above to verify it.": "Ku dar lambar taleefan kor ka xaqiiji.", "Job history": "Taariikhda shaqooyinka",
   "At least one skill verified (needed before companies can invite you)": "Ugu yaraan hal xirfad oo la xaqiijiyay (loo baahan yahay ka hor intaan shirkaduhu ku martiqaadin)",
 };

@@ -16,7 +16,7 @@ export default function Security() {
       <div className="card">
         <h2>Email</h2>
         <p className="muted">{me.email}</p>
-        <VerifyBox channel="email" verified={!!me.emailVerified} onVerified={reload} />
+        <VerifyBox channel="email" verified={!!me.emailVerified} current={me.email} onVerified={reload} />
       </div>
       <div className="card">
         <h2>Two-factor authentication</h2>

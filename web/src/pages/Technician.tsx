@@ -53,8 +53,8 @@ function Dashboard({ profile, reload }: { profile: Profile; reload: () => void }
       <Details profile={profile} reload={reload} />
       <div className="card">
         <h2 style={{ marginTop: 0 }}>{t("Verification")}</h2>
-        {profile.phone ? <VerifyBox channel="phone" verified={!!profile.phoneVerified} onVerified={reload} /> : <p className="muted">{t("Add a phone number above to verify it.")}</p>}
-        <VerifyBox channel="email" verified={!!me.emailVerified} onVerified={reloadMe} />
+        {/* Phone verification is hidden until an SMS provider is set up (see Phase8Endpoints /me/verify/phone). */}
+        <VerifyBox channel="email" verified={!!me.emailVerified} current={me.email} onVerified={reloadMe} />
       </div>
       <Skills profile={profile} reload={reload} />
       <Areas mine={areas} />
